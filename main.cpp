@@ -207,6 +207,7 @@ int TestDrawShape()
 
 	return EXIT_SUCCESS;
 }
+
 int main()
 {
 	return TestDrawShape();
