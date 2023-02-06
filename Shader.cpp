@@ -5,6 +5,10 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 	std::string fragmentCode;
 	std::ifstream vShaderFile;
 	std::ifstream fShaderFile;
+
+	vShaderFile.exceptions(std::ifstream::badbit);
+	fShaderFile.exceptions(std::ifstream::badbit);
+
 	try
 	{
 		vShaderFile.open(vertexPath);
