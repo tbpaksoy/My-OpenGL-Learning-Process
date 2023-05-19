@@ -1,4 +1,8 @@
 #include "Shader.h"
+#include "GLFW/glfw3.h"
+#include <fstream>
+#include <sstream>
+#include <iostream>
 Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 {
 	std::string vertexCode;
@@ -25,6 +29,7 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 	{
 		std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ" << std::endl;
 	}
+
 	const GLchar* vShaderCode = vertexCode.c_str();
 	const GLchar* fShaderCode = fragmentCode.c_str();
 
@@ -41,7 +46,6 @@ Shader::Shader(const GLchar* vertexPath, const GLchar* fragmentPath)
 		glGetShaderInfoLog(vertex, 512, NULL, info);
 		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << info << std::endl;
 	}
-
 	fragment = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fragment, 1, &fShaderCode, NULL);
 	glCompileShader(fragment);
