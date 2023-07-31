@@ -1,13 +1,15 @@
 #include <iostream>
 #include <filesystem>
 #include <string>
+#include <vector>
 #define GLEW_STATIC
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 #include "Shader.h"
+#include "Mesh.h"
 
-const GLint w = 600, h = 800;
+const GLint w = 800, h = 800;
 const GLchar* vss = "#version 330 core\n"
 "layout (location = 0) in vec3 position;\n"
 "void main()\n"
@@ -294,7 +296,7 @@ int TestDrawShape(const char* v, const char* f)
 		randf(),randf(),randf(), 0.0f, 1.0f, 0.0f,
 		randf(),randf(),randf(), 0.0f, 0.0f, 1.0f
 	};
-
+	std::cout << sizeof(vertices) << std::endl;
 	GLuint VBO, VAO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -361,7 +363,7 @@ int TestDrawShape(const char* v, const char* f)
 
 	return EXIT_SUCCESS;
 }
-int TestDrawShape(const char* vs, const char* fs, GLfloat* v)
+int TestDrawShape(const char* v, const char* f, std::vector<GLclampf> vert)
 {
 	std::srand(std::time(nullptr));
 
@@ -398,7 +400,7 @@ int TestDrawShape(const char* vs, const char* fs, GLfloat* v)
 	}
 	glViewport(0, 0, sw, sh);
 
-	Shader shader(vs, fs);
+	Shader shader(v, f);
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertexShader, 1, &vss, NULL);
 	glCompileShader(vertexShader);
@@ -436,14 +438,15 @@ int TestDrawShape(const char* vs, const char* fs, GLfloat* v)
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
-
 	GLuint VBO, VAO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
 
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(v), v, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * vert.size(), &vert.front(), GL_STATIC_DRAW);
+
+
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
@@ -463,7 +466,6 @@ int TestDrawShape(const char* vs, const char* fs, GLfloat* v)
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		shader.Use();
-
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 		glBindVertexArray(0);
@@ -475,7 +477,31 @@ int TestDrawShape(const char* vs, const char* fs, GLfloat* v)
 	glDeleteBuffers(1, &VBO);
 
 	glfwTerminate();
+
 	return EXIT_SUCCESS;
+}
+int DrawMesh(const char* vertexPath, const char* fragmentPath, Mesh *mesh)
+{
+	glfwInit();
+
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+
+	GLFWwindow* window = glfwCreateWindow(w, h, "LearnOpenGL", nullptr, nullptr);
+	int sw, sh;
+	glfwGetFramebufferSize(window, &sw, &sh);
+	glfwMakeContextCurrent(window);
+	glewExperimental = GL_TRUE;
+	glViewport(0, 0, sw, sh);
+
+	GLuint VBO, VAO, EBO;
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
 }
 int main()
 {
@@ -483,12 +509,20 @@ int main()
 	std::replace(cp.begin(), cp.end(), '\\', '/');
 	cp = cp + "/";
 	std::string v = cp + "core.vs", f = cp + "core.frag";
-	GLfloat vert[] = 
-	{
-		0.5f, -0.5f, 0.0f,    1.0f, 0.0f, 0.0f,
-		0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,
-		0.0f, 0.5f, 0.0f,     0.0f, 0.0f, 1.0f
-	};
-	int i = TestDrawShape(v.c_str(), f.c_str()/*, vert */ );
+	std::vector<Vertex*> vertices;
+	vertices.push_back(new Vertex(Vector3D(0.2f, 0.2f, 0.0f), Vector3D(1, 0, 0)));
+	vertices.push_back(new Vertex(Vector3D(0.8f, 0.2f, 0.0f), Vector3D(0, 1, 0)));
+	vertices.push_back(new Vertex(Vector3D(0.2f, 0.8f, 0.0f), Vector3D(1, 0, 1)));
+	vertices.push_back(new Vertex(Vector3D(0.8f, 0.8f, 0.0f), Vector3D(0, 1, 1)));
+	std::vector<unsigned int> indices;
+	indices.push_back(0);
+	indices.push_back(1);
+	indices.push_back(2);
+	indices.push_back(1);
+	indices.push_back(2);
+	indices.push_back(3);
+	Mesh* mesh = new Mesh(vertices, indices);
+
+	int i = DrawMesh(v.c_str(), f.c_str(), mesh);
 	std::cout << i << std::endl;
 }
