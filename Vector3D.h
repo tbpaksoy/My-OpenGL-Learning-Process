@@ -10,4 +10,6 @@ public:
 	float X();
 	float Y();
 	float Z();
+	Vector3D operator*(float f);
+	Vector3D operator/(float f);
 };

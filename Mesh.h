@@ -9,6 +9,7 @@ private:
 public:
 	void AssignVertices(std::vector<Vertex*> vertices);
 	void AssignIndices(std::vector<unsigned int> indices);
+	void AddVertex(Vertex* vertex, bool addIndex = false);
 	int Count();
 	std::vector<float> GetPositionPoints();
 	std::vector<float> GetColorPoints();

@@ -8,6 +8,14 @@ void Mesh::AssignIndices(std::vector<unsigned int> indices)
 {
 	this->indices = indices;
 }
+void Mesh::AddVertex(Vertex* vertex, bool addIndex)
+{
+	vertices.push_back(vertex);
+	if(addIndex)
+	{
+		indices.push_back((unsigned int)indices.size());
+	}
+}
 int Mesh::Count()
 {
 	return vertices.size();

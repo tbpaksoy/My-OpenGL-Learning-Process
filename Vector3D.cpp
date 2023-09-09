@@ -24,3 +24,11 @@ float Vector3D::Z()
 {
 	return z;
 }
+Vector3D Vector3D::operator*(float f)
+{
+	return Vector3D(x * f, y * f, z * f);
+}
+Vector3D Vector3D::operator/(float f)
+{
+	return Vector3D(x / f, y / f, z / f);
+}
