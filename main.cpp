@@ -12,6 +12,8 @@
 #include "Shader.h"
 #include "Mesh.h"
 
+#define Dev
+
 const GLint w = 800, h = 800;
 const GLchar* vss = "#version 330 core\n"
 "layout (location = 0) in vec3 position;\n"
@@ -69,6 +71,7 @@ int TestWindow()
 	}
 	return EXIT_SUCCESS;
 }
+
 int TestDrawShape()
 {
 	std::srand(std::time(nullptr));
@@ -217,6 +220,7 @@ int TestDrawShape()
 
 	return EXIT_SUCCESS;
 }
+
 int TestDrawShape(const char* v, const char* f)
 {
 	std::srand(std::time(nullptr));
@@ -367,6 +371,7 @@ int TestDrawShape(const char* v, const char* f)
 
 	return EXIT_SUCCESS;
 }
+
 int TestDrawShape(const char* v, const char* f, std::vector<GLclampf> vert)
 {
 	std::srand(std::time(nullptr));
@@ -484,6 +489,7 @@ int TestDrawShape(const char* v, const char* f, std::vector<GLclampf> vert)
 
 	return EXIT_SUCCESS;
 }
+
 int DrawMesh(Shader *shader, Mesh *mesh, GLclampf bg[4])
 {
 
@@ -556,6 +562,7 @@ int DrawMesh(Shader *shader, Mesh *mesh, GLclampf bg[4])
 	glfwTerminate();
 	return EXIT_SUCCESS;
 }
+
 int DrawTriangles(Shader* shader, GLclampf bg[4])
 {
 	float(*randf)() = []()->float
@@ -626,7 +633,6 @@ int DrawTriangles(Shader* shader, GLclampf bg[4])
 			xpos = (xpos - sw / 2) / sw * 2;
 			ypos = (-ypos + sh / 2) / sh * 2;
 
-			std::cout << xpos << " " << ypos << std::endl;
 
 
 			Vertex* vertex = new Vertex(Vector3D(xpos, ypos, 0), Vector3D(randf(), randf(), randf()));
@@ -661,6 +667,7 @@ int DrawTriangles(Shader* shader, GLclampf bg[4])
 	glfwTerminate();
 	return EXIT_SUCCESS;
 }
+
 #ifdef Dev
 int DrawPolygon(Shader* shader, GLclampf bg[4])
 {
@@ -723,10 +730,6 @@ int DrawPolygon(Shader* shader, GLclampf bg[4])
 	};
 	auto IsInside = [&](Vector3D a, Vector3D b, Vector3D c, Vector3D p)->bool
 	{
-		a = a * 10000;
-		b = b * 10000;
-		c = c * 10000;
-		p = p * 10000;
 		double detT = (double)(b.X() - a.X()) * (double)(c.Y() - a.Y()) - (double)(c.X() - a.X()) * (double)(b.Y() - a.Y());
 		double alpha = ((c.Y() - a.Y()) * (p.X() - a.X()) - (c.X() - a.X()) * (p.Y() - a.Y())) / detT;
 		double beta = ((a.Y() - b.Y()) * (p.X() - a.X()) - (a.X() - b.X()) * (p.Y() - a.Y())) / detT;
@@ -777,16 +780,6 @@ int DrawPolygon(Shader* shader, GLclampf bg[4])
 					triangles.push_back(i);
 					triangles.push_back((i + 1) % n);
 					remaining.erase(remaining.begin() + i);
-					Vector3D a = polygon[triangles.end()[-2]];
-					Vector3D b = polygon[triangles.end()[-1]];
-					Vector3D c = polygon[triangles.end()[-0]];
-					double cx = (a.X() + b.X() + c.X()) / 3;
-					double cy = (a.Y() + b.Y() + c.Y()) / 3;
-					double angleA = std::atan2(a.Y() -  cy, a.X() - cx);
-					double angleB = std::atan2(b.Y() -  cy, b.X() - cx);
-					double angleC = std::atan2(c.Y() -  cy, c.X() - cx);
-					if (angleA > angleB) std::iter_swap(*(triangles.end() - 3), *(triangles.end() - 2));
-					if (angleB > angleC) std::iter_swap(*(triangles.end() - 2), *(triangles.end() - 1));
 					n--;
 					break;
 				}
@@ -798,7 +791,6 @@ int DrawPolygon(Shader* shader, GLclampf bg[4])
 
 	while (!glfwWindowShouldClose(window))
 	{
-		std::cout << "test" << std::endl;
 		int currentEvent = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1);
 		if (lastEvent != currentEvent && currentEvent == GLFW_PRESS)
 		{
@@ -807,40 +799,22 @@ int DrawPolygon(Shader* shader, GLclampf bg[4])
 			xpos = (xpos - sw / 2) / sw * 2;
 			ypos = (-ypos + sh / 2) / sh * 2;
 			Vertex* vertex = new Vertex(Vector3D(xpos, ypos, 0), Vector3D(randf(), randf(), randf()));
-			bool violating = false;
-			std::cout << data.size() << std::endl;
-			if (data.size() >= 18)
-				for (int i = 0; i < data.size(); i += 6)
-				{
-					Vector3D a = Vector3D(data[i], data[i + 1], data[i + 2]);
-					Vector3D b = Vector3D(data[(i + 6) % data.size()], data[(i + 7) % data.size()], data[(i + 8) % data.size()]);
-					Vector3D c = Vector3D(data[(i + 12) % data.size()], data[(i + 13) % data.size()], data[(i + 14) % data.size()]);
-					if(IsInside(a, b, c, vertex->Position()))
-					{
-						violating = true;
-						break;
-					}
-				}
-			if (!violating) 
-			{
-				pos.push_back(vertex->Position());
-				for(float f : vertex->GetData())
-				{
-					data.push_back(f);
-				}
-				indices = Triangulate(pos);
-			}
+			for (float f : vertex->GetData()) data.push_back(f);
 			if (indices.size() >= 3)
 			{
-				std::cout << "Buffering :" << indices.size() << std::endl;
-				glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * data.size(), &data.front(), GL_STATIC_DRAW);
-				glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * indices.size(), &indices.front(), GL_STATIC_DRAW);
+				indices.push_back(indices.size() - 1);
+				indices.push_back(indices.size() - 2);
+				indices.push_back(indices.size() - 3);
 			}
-			for(unsigned int i : indices)
+			else 
 			{
-				std::cout << i << " ";
+				indices.push_back(indices.size());
 			}
+			for (unsigned int i : indices) std::cout << i << " ";
 			std::cout << std::endl;
+
+			glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * data.size(), &data.front(), GL_STATIC_DRAW);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * indices.size(), &indices.front(), GL_STATIC_DRAW);
 		}
 		lastEvent = currentEvent;
 		glfwPollEvents();
@@ -861,7 +835,7 @@ int DrawPolygon(Shader* shader, GLclampf bg[4])
 			glEnd();
 		}
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, indices.size());
+		glDrawArrays(GL_TRIANGLE_FAN, 0, indices.size());
 		glBindVertexArray(0);
 		glfwSwapBuffers(window);
 	}
@@ -912,6 +886,6 @@ int main()
 
 	Shader* shader = new Shader(v.c_str(), f.c_str());
 	float bg[4] = { 0,0,0,0 };
-	DrawTriangles(shader, bg);
+	DrawPolygon(shader, bg);
 
 }
