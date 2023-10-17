@@ -845,7 +845,7 @@ int DrawPolygon(Shader* shader, GLclampf bg[4])
 	glfwTerminate();
 	return EXIT_SUCCESS;
 }
-int DrawLines(Shader* shader, GLclampf bg[4]) 
+int DrawLineLoop(Shader* shader, GLclampf bg[4]) 
 {
 	Vertex *last = nullptr;
 	std::vector<Vertex*> vertices;
@@ -1019,6 +1019,189 @@ int DrawLines(Shader* shader, GLclampf bg[4])
 	glfwTerminate();
 	return EXIT_SUCCESS;
 }
+int DrawLines(Shader* shader, GLclampf bg[4])
+{
+	Vertex* last = nullptr;
+	std::vector<Vertex*> vertices;
+
+	float(*randf)() = []()->float
+	{
+		int lastDigits = rand() % 1000;
+		return std::stof("0." + std::to_string(lastDigits));
+	};
+
+	Vector3D col = Vector3D(randf(), randf(), randf());
+
+	glfwInit();
+
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+
+	GLFWwindow* window = glfwCreateWindow(w, h, "LearnOpenGL", nullptr, nullptr);
+	int sw, sh;
+	glfwGetFramebufferSize(window, &sw, &sh);
+	glfwMakeContextCurrent(window);
+	glViewport(0, 0, sw, sh);
+
+	if (GLEW_OK != glewInit())
+	{
+		std::cout << "GLEW failed." << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	glewExperimental = GL_TRUE;
+	shader->Compile();
+
+	GLuint VBO, VAO, EBO;
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+
+	glBindVertexArray(VAO);
+
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+
+	glBindVertexArray(0);
+
+	auto IsConvex = [&](Vector3D p, Vector3D c, Vector3D n)->bool
+	{
+		return (c.X() - p.X()) * (n.Y() - p.Y()) - (n.X() - p.X()) * (c.Y() - p.Y()) >= 0;
+	};
+	auto IsInside = [&](Vector3D a, Vector3D b, Vector3D c, Vector3D p)->bool
+	{
+		double detT = (double)(b.X() - a.X()) * (double)(c.Y() - a.Y()) - (double)(c.X() - a.X()) * (double)(b.Y() - a.Y());
+		double alpha = ((c.Y() - a.Y()) * (p.X() - a.X()) - (c.X() - a.X()) * (p.Y() - a.Y())) / detT;
+		double beta = ((a.Y() - b.Y()) * (p.X() - a.X()) - (a.X() - b.X()) * (p.Y() - a.Y())) / detT;
+		double gamma = 1.0 - alpha - beta;
+		return alpha >= 0 && beta >= 0 && gamma >= 0;
+	};
+	auto IsEar = [&](std::vector<Vector3D> polygon, int i) -> bool
+	{
+
+		int s = polygon.size();
+		if (s < i || s < 3)return false;
+		Vector3D p = polygon[(i - 1 + s) % s];
+		Vector3D c = polygon[i];
+		Vector3D n = polygon[(i + 1) % s];
+
+		if (!IsConvex(p, c, n))
+		{
+			for (int j = 0; j < s; j++)
+			{
+				if (j != (i - 1 + s) % s && j != i && j != (i + 1) % s)
+				{
+					if (IsInside(p, c, n, polygon[j]))
+					{
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+		return false;
+	};
+	auto Triangulate = [&](std::vector<Vector3D> polygon) -> std::vector<unsigned int>
+	{
+		int n = polygon.size();
+		std::vector<unsigned int> triangles;
+		std::vector<unsigned int> remaining;
+		for (int i = 0; i < n; i++)
+		{
+			remaining.push_back(i);
+		}
+		while (n > 2)
+		{
+			for (int i = 0; i < n; i++)
+			{
+				if (IsEar(polygon, i))
+				{
+					triangles.push_back((i - 1 + n) % n);
+					triangles.push_back(i);
+					triangles.push_back((i + 1) % n);
+					remaining.erase(remaining.begin() + i);
+					n--;
+					break;
+				}
+			}
+		}
+		return triangles;
+	};
+	int lastEvent = GLFW_RELEASE;
+
+	while (!glfwWindowShouldClose(window))
+	{
+		double xpos, ypos;
+		glfwGetCursorPos(window, &xpos, &ypos);
+		xpos = (xpos - sw / 2) / sw * 2;
+		ypos = (-ypos + sh / 2) / sh * 2;
+		last = new Vertex(Vector3D(xpos, ypos, 0), col);
+
+
+		int currentEvent = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1);
+		if (lastEvent != currentEvent && currentEvent == GLFW_PRESS)
+		{
+			if(vertices.size() > 1)vertices.push_back(vertices.back());
+			vertices.push_back(last);
+			col = Vector3D(randf(), randf(), randf());
+		}
+
+
+
+		std::vector<float> data;
+		if (!vertices.empty()) for (Vertex* vertex : vertices) for (float f : vertex->GetData()) data.push_back(f);
+		std::vector<unsigned int> indices;
+		for (int i = 0; i < vertices.size(); i++)
+		{
+			indices.push_back(i);
+		}
+		if(vertices.size())
+		{
+			for (float f : vertices.back()->GetData()) data.push_back(f);
+			for (float f : last->GetData()) data.push_back(f);
+			indices.push_back(indices.size());
+			indices.push_back(indices.size());
+		}
+
+
+		lastEvent = currentEvent;
+
+
+
+		if (!data.empty() && !indices.empty())
+		{
+			glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * data.size(), &data.front(), GL_STATIC_DRAW);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * indices.size(), &indices.front(), GL_STATIC_DRAW);
+		}
+
+
+		glfwPollEvents();
+		glClearColor(bg[0], bg[1], bg[2], bg[3]);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		shader->Use();
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_LINES, 0, indices.size());
+		glBindVertexArray(0);
+		glfwSwapBuffers(window);
+	}
+
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &EBO);
+
+	glfwTerminate();
+	return EXIT_SUCCESS;
+}
 #endif
 int main()
 {
@@ -1027,35 +1210,6 @@ int main()
 	std::replace(cp.begin(), cp.end(), '\\', '/');
 	cp = cp + "/";
 	std::string v = cp + "core.vs", f = cp + "core.frag";
-	/*
-	srand(time(nullptr));
-	float(*randf)() = []()->float
-	{
-		int lastDigits = rand() % 1000;
-		return std::stof("0." + std::to_string(lastDigits));
-	};
-	std::vector<Vertex*> vertices;
-	vertices.push_back(new Vertex(Vector3D(0.0f, 0.0f, 0.0f), Vector3D(randf(), randf(), randf())));
-	vertices.push_back(new Vertex(Vector3D(0.666f, 0.0f, 0.0f), Vector3D(randf(), randf(), randf())));
-	vertices.push_back(new Vertex(Vector3D(0.333f, 0.666f, 0.0f), Vector3D(randf(), randf(), randf())));
-	vertices.push_back(new Vertex(Vector3D(1.0f, 0.666f, 0.0f), Vector3D(randf(), randf(), randf())));
-	vertices.push_back(new Vertex(Vector3D(0.5f, 1.0f, 0.0f), Vector3D(randf(), randf(), randf())));
-	std::vector<unsigned int> indices;
-	indices.push_back(0);
-	indices.push_back(1);
-	indices.push_back(2);
-	indices.push_back(2);
-	indices.push_back(1);
-	indices.push_back(3);
-	indices.push_back(2);
-	indices.push_back(3);
-	indices.push_back(4);
-	std::cout << glewGetErrorString(0) << std::endl;
-	Mesh* mesh = new Mesh(vertices, indices);
-	GLclampf bg[4] = { 0.3f,0.55f,0.1f,1.0f };
-	int i = DrawMesh(new Shader(v.c_str(), f.c_str()), mesh, bg);
-	std::cout << i << std::endl;*/
-
 	Shader* shader = new Shader(v.c_str(), f.c_str());
 	float bg[4] = { 0,0,0,0 };
 	DrawLines(shader, bg);
