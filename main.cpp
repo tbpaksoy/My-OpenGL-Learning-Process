@@ -11,6 +11,7 @@
 #include "Vector3D.h"
 #include "Shader.h"
 #include "Mesh.h"
+#include "Surface.h"
 
 #define Dev
 
@@ -237,6 +238,8 @@ int TestDrawShape(const char* v, const char* f)
 		return (GLfloat)(rand() % 2 == 0 ? 1.0f : -1.0f) * ((GLclampf)rand() / RAND_MAX);
 	};
 
+	
+	
 	GLFWwindow* window = glfwCreateWindow(w, h, "LearnOpenGL", nullptr, nullptr);
 
 	int sw, sh;
@@ -845,6 +848,7 @@ int DrawPolygon(Shader* shader, GLclampf bg[4])
 	glfwTerminate();
 	return EXIT_SUCCESS;
 }
+
 int DrawLineLoop(Shader* shader, GLclampf bg[4]) 
 {
 	Vertex *last = nullptr;
@@ -1019,6 +1023,7 @@ int DrawLineLoop(Shader* shader, GLclampf bg[4])
 	glfwTerminate();
 	return EXIT_SUCCESS;
 }
+
 int DrawLines(Shader* shader, GLclampf bg[4])
 {
 	Vertex* last = nullptr;
@@ -1202,6 +1207,62 @@ int DrawLines(Shader* shader, GLclampf bg[4])
 	glfwTerminate();
 	return EXIT_SUCCESS;
 }
+
+int Draw(Shader* shader, Surface *surface)
+{
+	if (!surface || !surface->AbleToDraw()) return 0;
+
+	glfwInit();
+
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+
+	glewExperimental = GL_TRUE;
+
+	int sw, sh;
+
+	std::cin >> sw;
+	std::cin >> sh;
+
+	GLFWwindow* window = glfwCreateWindow(sw, sh, "draw surface", nullptr, nullptr);
+
+	glfwGetFramebufferSize(window, &sw, &sh);
+
+	glfwMakeContextCurrent(window);
+	
+	glfwInit();
+
+	GLuint VAO, VBO, EBO;
+
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+	
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+	glBindVertexArray(0);
+
+	shader->Compile();
+
+	while (!glfwWindowShouldClose(window))
+	{
+		glfwPollEvents();
+		glClear(GL_COLOR_BUFFER_BIT);
+		glfwSwapBuffers(window);
+
+		shader->Use();
+
+	}
+
+	return EXIT_SUCCESS;
+}
 #endif
 int main()
 {
@@ -1212,6 +1273,6 @@ int main()
 	std::string v = cp + "core.vs", f = cp + "core.frag";
 	Shader* shader = new Shader(v.c_str(), f.c_str());
 	float bg[4] = { 0,0,0,0 };
-	DrawLines(shader, bg);
-
+	//DrawLines(shader, bg);
+	Draw(shader, nullptr);
 }

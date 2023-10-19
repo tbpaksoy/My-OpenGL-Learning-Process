@@ -1,10 +1,15 @@
 #include <vector>
-#include "Vertex.h"
-#include "Vector3D.h"
+#include "Edge.h"
 #pragma once
 class Surface
 {
 public:
-	virtual std::vector<Vertex*> GetPoints() = 0;
+	std::vector<Edge*> edges;
 	std::vector<float> GetData();
+	std::vector<Vertex*> GetVertices();
+	bool AbleToDraw();
+	Surface();
+	Surface(std::vector<Vertex*> vertices);
+	Surface(std::vector<Vector3D> pos, std::vector<Vector3D> col);
+	~Surface();
 };
