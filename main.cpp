@@ -1249,6 +1249,7 @@ int Draw(Shader* shader, Surface *surface)
 	glEnableVertexAttribArray(1);
 	glBindVertexArray(0);
 
+
 	shader->Compile();
 
 	while (!glfwWindowShouldClose(window))
@@ -1262,6 +1263,11 @@ int Draw(Shader* shader, Surface *surface)
 	}
 
 	return EXIT_SUCCESS;
+}
+
+int DrawCube(GLclampf size, Shader *shader)
+{
+
 }
 #endif
 int main()
