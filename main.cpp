@@ -12,8 +12,7 @@
 #include "Shader.h"
 #include "Mesh.h"
 #include "Surface.h"
-
-#define Dev
+#include "Camera.h"
 
 const GLint w = 800, h = 800;
 const GLchar* vss = "#version 330 core\n"
@@ -28,6 +27,17 @@ const GLchar* fss = "#version 330 core\n"
 "{\n"
 "color = vec4(1.0f, 0.5f, 0.2f, 1.0);\n"
 "}\n\0";
+
+
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
+void ScrollCallback(GLFWwindow* window, double xOffse, double yOffset);
+void MouseCallback(GLFWwindow* window, double xPos, double yPos);
+void DoMovement();
+
+
+
+
+
 int TestWindow()
 {
 	std::srand(std::time(nullptr));
@@ -671,7 +681,6 @@ int DrawTriangles(Shader* shader, GLclampf bg[4])
 	return EXIT_SUCCESS;
 }
 
-#ifdef Dev
 int DrawPolygon(Shader* shader, GLclampf bg[4])
 {
 	std::vector<float> data;
@@ -1026,6 +1035,10 @@ int DrawLineLoop(Shader* shader, GLclampf bg[4])
 
 int DrawLines(Shader* shader, GLclampf bg[4])
 {
+
+
+
+
 	Vertex* last = nullptr;
 	std::vector<Vertex*> vertices;
 
@@ -1267,9 +1280,73 @@ int Draw(Shader* shader, Surface *surface)
 
 int DrawCube(GLclampf size, Shader *shader)
 {
+	float(*randf)() = []()->float
+	{
+		int lastDigits = rand() % 1000;
+		return std::stof("0." + std::to_string(lastDigits));
+	};
 
+	GLuint w, h;
+	int sw, sh;
+
+	std::cout << "Please enter width of window :";
+	std::cin >> w;
+	std::cout << std::endl;
+
+	std::cout << "Please enter height of window :";
+	std::cin >> h;
+	std::cout << std::endl;
+
+	glfwInit();
+
+	glfwWindowHint(GLFW_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+
+	GLFWwindow* window = glfwCreateWindow(w, h, "Cube", nullptr, nullptr);
+
+	glfwGetFramebufferSize(window, &sw, &sh);
+	glfwMakeContextCurrent(window);
+	glViewport(0, 0, sw, sh);
+
+	glewInit();
+	glewExperimental = true;
+
+	shader->Compile();
+
+	Camera camera(glm::vec3(0, 0, 3));
+	GLfloat lastX = w / 2.0f, lastY = h / 2.0f;
+
+	bool keys[1024];
+	bool firstMouse = true;
+
+	GLfloat deltaTime = 0.0f, lastTime = 0.0f;
+
+	GLuint VAO, VBO, EBO;
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(1);
+
+	glBindVertexArray(0);
+
+
+
+	while(!glfwWindowShouldClose(window))
+	{
+		glDrawArrays(GL_TRIANGLES, 0, 6 * 3);
+	}
 }
-#endif
+
 int main()
 {
 	
@@ -1279,6 +1356,7 @@ int main()
 	std::string v = cp + "core.vs", f = cp + "core.frag";
 	Shader* shader = new Shader(v.c_str(), f.c_str());
 	float bg[4] = { 0,0,0,0 };
-	//DrawLines(shader, bg);
-	Draw(shader, nullptr);
+	DrawCube(0.8f, shader);
+
+
 }
