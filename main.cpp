@@ -36,6 +36,42 @@ void DoMovement();
 
 
 
+void SetVersion(int major = 3, int minor = 3)
+{
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+}
+GLFWwindow *CreateWindow(int w, int h, int *sw, int *hw,const char *name = nullptr)
+{
+	GLFWwindow * window = glfwCreateWindow(w, h, name, nullptr, nullptr);
+	glfwGetFramebufferSize(window ,sw, hw);
+	glfwMakeContextCurrent(window);
+	glViewport(0, 0, *sw, *hw);
+	return window;
+}
+GLuint GenVAO()
+{
+	GLuint VAO;
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+	return VAO;
+}
+GLuint GenVBO()
+{
+	GLuint VBO;
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	return VBO;
+}
+GLuint GenEBO()
+{
+	GLuint EBO;
+	glGenBuffers(1, &EBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	return EBO;
+}
 
 
 int TestWindow()
@@ -1286,29 +1322,17 @@ int DrawCube(GLclampf size, Shader *shader)
 		return std::stof("0." + std::to_string(lastDigits));
 	};
 
-	GLuint w, h;
-	int sw, sh;
-
-	std::cout << "Please enter width of window :";
-	std::cin >> w;
-	std::cout << std::endl;
-
-	std::cout << "Please enter height of window :";
-	std::cin >> h;
-	std::cout << std::endl;
-
 	glfwInit();
 
-	glfwWindowHint(GLFW_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	SetVersion();
 
-	GLFWwindow* window = glfwCreateWindow(w, h, "Cube", nullptr, nullptr);
+	int w, h, sw, sh;
+	std::cout << "Please enter window width :" << std::endl;
+	std::cin >> w;
+	std::cout << "Please enter window height :" << std::endl;
+	std::cin >> h;
 
-	glfwGetFramebufferSize(window, &sw, &sh);
-	glfwMakeContextCurrent(window);
-	glViewport(0, 0, sw, sh);
+	GLFWwindow* window = CreateWindow(h, w, &sw, &sh, "Cube");
 
 	glewInit();
 	glewExperimental = true;
@@ -1323,14 +1347,7 @@ int DrawCube(GLclampf size, Shader *shader)
 
 	GLfloat deltaTime = 0.0f, lastTime = 0.0f;
 
-	GLuint VAO, VBO, EBO;
-	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
-	glGenBuffers(1, &EBO);
-
-	glBindVertexArray(VAO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	GLuint VAO = GenVAO(), VBO = GenVBO(), EBO = GenEBO();
 	
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)0);
 	glEnableVertexAttribArray(0);
