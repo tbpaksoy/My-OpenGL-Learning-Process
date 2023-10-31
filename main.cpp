@@ -29,10 +29,7 @@ const GLchar* fss = "#version 330 core\n"
 "}\n\0";
 
 
-void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
-void ScrollCallback(GLFWwindow* window, double xOffse, double yOffset);
-void MouseCallback(GLFWwindow* window, double xPos, double yPos);
-void DoMovement();
+
 
 
 
@@ -73,6 +70,27 @@ GLuint GenEBO()
 	return EBO;
 }
 
+const float cubePos[] = { -1,-1,-1, //0
+						  -1,-1,1,  //1
+						  -1,1,-1,  //2
+						  -1,1,1,   //3
+						  1,-1,-1,  //4
+						  1,-1,1,   //5
+						  1,1,-1,   //6
+						  1,1,1};   //7
+const unsigned int cubeIdx[] = { 0,1,2,  //(-1,y,z) -> left 
+								 0,2,3,
+								 4,5,6,  //(1,y,z) -> right
+								 5,6,7,
+								 0,2,4,  //(x,y,-1) -> bottom
+								 2,4,6,
+								 1,3,5,  //(x,y,1) -> up
+								 3,5,7,
+								 0,1,4,  //(x,-1,z) -> back
+								 1,4,6,
+								 2,3,6,  //(x,1,z) -> forward
+								 3,6,7
+							   };
 
 int TestWindow()
 {
@@ -118,7 +136,6 @@ int TestWindow()
 	}
 	return EXIT_SUCCESS;
 }
-
 int TestDrawShape()
 {
 	std::srand(std::time(nullptr));
@@ -267,7 +284,6 @@ int TestDrawShape()
 
 	return EXIT_SUCCESS;
 }
-
 int TestDrawShape(const char* v, const char* f)
 {
 	std::srand(std::time(nullptr));
@@ -420,7 +436,6 @@ int TestDrawShape(const char* v, const char* f)
 
 	return EXIT_SUCCESS;
 }
-
 int TestDrawShape(const char* v, const char* f, std::vector<GLclampf> vert)
 {
 	std::srand(std::time(nullptr));
@@ -538,7 +553,6 @@ int TestDrawShape(const char* v, const char* f, std::vector<GLclampf> vert)
 
 	return EXIT_SUCCESS;
 }
-
 int DrawMesh(Shader *shader, Mesh *mesh, GLclampf bg[4])
 {
 
@@ -611,7 +625,6 @@ int DrawMesh(Shader *shader, Mesh *mesh, GLclampf bg[4])
 	glfwTerminate();
 	return EXIT_SUCCESS;
 }
-
 int DrawTriangles(Shader* shader, GLclampf bg[4])
 {
 	float(*randf)() = []()->float
@@ -716,7 +729,6 @@ int DrawTriangles(Shader* shader, GLclampf bg[4])
 	glfwTerminate();
 	return EXIT_SUCCESS;
 }
-
 int DrawPolygon(Shader* shader, GLclampf bg[4])
 {
 	std::vector<float> data;
@@ -893,7 +905,6 @@ int DrawPolygon(Shader* shader, GLclampf bg[4])
 	glfwTerminate();
 	return EXIT_SUCCESS;
 }
-
 int DrawLineLoop(Shader* shader, GLclampf bg[4]) 
 {
 	Vertex *last = nullptr;
@@ -1068,7 +1079,6 @@ int DrawLineLoop(Shader* shader, GLclampf bg[4])
 	glfwTerminate();
 	return EXIT_SUCCESS;
 }
-
 int DrawLines(Shader* shader, GLclampf bg[4])
 {
 
@@ -1256,7 +1266,6 @@ int DrawLines(Shader* shader, GLclampf bg[4])
 	glfwTerminate();
 	return EXIT_SUCCESS;
 }
-
 int Draw(Shader* shader, Surface *surface)
 {
 	if (!surface || !surface->AbleToDraw()) return 0;
@@ -1313,9 +1322,15 @@ int Draw(Shader* shader, Surface *surface)
 
 	return EXIT_SUCCESS;
 }
-
 int DrawCube(GLclampf size, Shader *shader)
 {
+	void KeyCallback(GLFWwindow * window, int key, int scancode, int action, int mode);
+	void ScrollCallback(GLFWwindow * window, double xOffse, double yOffset);
+	void MouseCallback(GLFWwindow * window, double xPos, double yPos);
+	void DoMovement();
+
+
+
 	float(*randf)() = []()->float
 	{
 		int lastDigits = rand() % 1000;
@@ -1347,6 +1362,14 @@ int DrawCube(GLclampf size, Shader *shader)
 
 	GLfloat deltaTime = 0.0f, lastTime = 0.0f;
 
+	glfwSetKeyCallback(window, KeyCallback);
+	glfwSetCursorPosCallback(window, MouseCallback);
+	glfwSetScrollCallback(window, ScrollCallback);
+
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+
+
 	GLuint VAO = GenVAO(), VBO = GenVBO(), EBO = GenEBO();
 	
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (void*)0);
@@ -1356,11 +1379,18 @@ int DrawCube(GLclampf size, Shader *shader)
 
 	glBindVertexArray(0);
 
-
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cubePos) * sizeof(float), cubePos, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIdx) * sizeof(unsigned int), cubeIdx, GL_STATIC_DRAW);
 
 	while(!glfwWindowShouldClose(window))
 	{
 		glDrawArrays(GL_TRIANGLES, 0, 6 * 3);
+
+		glm::mat4 projection;
+		projection = glm::perspective(camera.GetZoom(), (float)sw / (float)sh, 0.1f, 1000.0f);
+
+		glfwPollEvents();
+
 	}
 }
 
