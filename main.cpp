@@ -28,8 +28,45 @@ const GLchar* fss = "#version 330 core\n"
 "color = vec4(1.0f, 0.5f, 0.2f, 1.0);\n"
 "}\n\0";
 
+Camera camera(glm::vec3(0, 0, 3));
+bool keys[1024];
+bool firstMouse = true;
+GLfloat lastX, lastY;
 
-
+void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode)
+{
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) glfwSetWindowShouldClose(window, GL_TRUE);
+	if(key >= 0 && key < 1024)
+	{
+		if (action == GLFW_PRESS) keys[key] = true;
+		else if (action == GLFW_RELEASE) keys[key] = false;
+	}
+}
+void ScrollCallback(GLFWwindow* window, double xOffset, double yOffset)
+{
+	camera.ProcessMouseScroll(yOffset);
+}
+void MouseCallback(GLFWwindow* window, double xPos, double yPos)
+{
+	if(firstMouse)
+	{
+		lastX = xPos;
+		lastY = yPos;
+		firstMouse = false;
+	}
+	GLfloat xOffset = xPos - lastX;
+	GLfloat yOffset = yPos - lastY;
+	
+	lastY = yPos;
+	lastX = xPos;
+}
+void DoMovement(Camera *camera, GLfloat deltaTime)
+{
+	if (keys[GLFW_KEY_W] || keys[GLFW_KEY_UP]) camera->ProcessKeyboard(FORWARD, deltaTime);
+	if (keys[GLFW_KEY_S] || keys[GLFW_KEY_DOWN]) camera->ProcessKeyboard(BACKWARD, deltaTime);
+	if (keys[GLFW_KEY_A] || keys[GLFW_KEY_LEFT]) camera->ProcessKeyboard(LEFT, deltaTime);
+	if (keys[GLFW_KEY_D] || keys[GLFW_KEY_RIGHT]) camera->ProcessKeyboard(RIGHT, deltaTime);
+}
 
 
 
@@ -91,6 +128,7 @@ const unsigned int cubeIdx[] = { 0,1,2,  //(-1,y,z) -> left
 								 2,3,6,  //(x,1,z) -> forward
 								 3,6,7
 							   };
+
 
 int TestWindow()
 {
@@ -1315,20 +1353,13 @@ int Draw(Shader* shader, Surface *surface)
 		glfwPollEvents();
 		glClear(GL_COLOR_BUFFER_BIT);
 		glfwSwapBuffers(window);
-
 		shader->Use();
-
 	}
 
 	return EXIT_SUCCESS;
 }
 int DrawCube(GLclampf size, Shader *shader)
 {
-	void KeyCallback(GLFWwindow * window, int key, int scancode, int action, int mode);
-	void ScrollCallback(GLFWwindow * window, double xOffse, double yOffset);
-	void MouseCallback(GLFWwindow * window, double xPos, double yPos);
-	void DoMovement();
-
 
 
 	float(*randf)() = []()->float
@@ -1336,6 +1367,18 @@ int DrawCube(GLclampf size, Shader *shader)
 		int lastDigits = rand() % 1000;
 		return std::stof("0." + std::to_string(lastDigits));
 	};
+
+	float data[48];
+	for (int i = 0; i < 48; i += 6)
+	{
+		data[i] = cubePos[i] * size;
+		data[i + 1] = cubePos[i + 1] * size;
+		data[i + 2] = cubePos[i + 2] * size;
+		data[i + 3] = randf();
+		data[i + 4] = randf();
+		data[i + 5] = randf();
+	}
+
 
 	glfwInit();
 
@@ -1354,11 +1397,7 @@ int DrawCube(GLclampf size, Shader *shader)
 
 	shader->Compile();
 
-	Camera camera(glm::vec3(0, 0, 3));
 	GLfloat lastX = w / 2.0f, lastY = h / 2.0f;
-
-	bool keys[1024];
-	bool firstMouse = true;
 
 	GLfloat deltaTime = 0.0f, lastTime = 0.0f;
 
@@ -1379,19 +1418,32 @@ int DrawCube(GLclampf size, Shader *shader)
 
 	glBindVertexArray(0);
 
-	glBufferData(GL_ARRAY_BUFFER, sizeof(cubePos) * sizeof(float), cubePos, GL_STATIC_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIdx) * sizeof(unsigned int), cubeIdx, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(data), data, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIdx), cubeIdx, GL_STATIC_DRAW);
 
 	while(!glfwWindowShouldClose(window))
 	{
-		glDrawArrays(GL_TRIANGLES, 0, 6 * 3);
+		glfwPollEvents();
+
 
 		glm::mat4 projection;
 		projection = glm::perspective(camera.GetZoom(), (float)sw / (float)sh, 0.1f, 1000.0f);
 
-		glfwPollEvents();
+		glClearColor(0, 0, 0, 1);
 
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_LINE_LOOP, 0, sizeof(cubeIdx));
+		glBindVertexArray(0);
+		glfwSwapBuffers(window);
 	}
+
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &EBO);
+
+	glfwTerminate();
+
+	return EXIT_SUCCESS;
 }
 
 int main()
@@ -1400,7 +1452,7 @@ int main()
 	std::string cp = std::filesystem::current_path().string();
 	std::replace(cp.begin(), cp.end(), '\\', '/');
 	cp = cp + "/";
-	std::string v = cp + "core.vs", f = cp + "core.frag";
+	std::string v = cp + "core2.vs", f = cp + "core.frag";
 	Shader* shader = new Shader(v.c_str(), f.c_str());
 	float bg[4] = { 0,0,0,0 };
 	DrawCube(0.8f, shader);

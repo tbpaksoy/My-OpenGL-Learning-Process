@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#define GLEW_STATIC;
+
 #include <GL/glew.h>
 
 #include <glm/glm.hpp>
@@ -41,5 +41,6 @@ public:
     glm::mat4 GetViewMatrix();
     void ProcessKeyboard(CameraMovement direction, GLfloat deltaTime);
     void ProcessMouseMovement(GLfloat xOffset, GLfloat yOffset, GLboolean constraintPitch = false);
+    void ProcessMouseScroll(GLfloat yOffset);
     float GetZoom();
 };

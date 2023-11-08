@@ -1,7 +1,7 @@
 #include "Camera.h"
 #include <math.h>
 #include <algorithm>
-Camera::Camera(glm::vec3 position = glm::vec3(0, 0, 0), glm::vec3 up = glm::vec3(0, 0, 0), GLfloat yaw = YAW, GLfloat pitch = PITCH) :
+Camera::Camera(glm::vec3 position, glm::vec3 up, GLfloat yaw, GLfloat pitch) :
 	front(glm::vec3(0, 0, 1)), movementSpeed(SPEED), mouseSensivity(SENSITIVTY), zoom(ZOOM) 
 {
 	this->position = position;
@@ -34,7 +34,7 @@ void Camera::ProcessKeyboard(CameraMovement direction, GLfloat deltaTime)
 		break;
 	}
 }
-void Camera::ProcessMouseMovement(GLfloat xOffset, GLfloat yOffset, GLboolean constraintPitch = false)
+void Camera::ProcessMouseMovement(GLfloat xOffset, GLfloat yOffset, GLboolean constraintPitch)
 {
 	xOffset *= mouseSensivity;
 	yOffset *= mouseSensivity;
@@ -48,6 +48,12 @@ void Camera::ProcessMouseMovement(GLfloat xOffset, GLfloat yOffset, GLboolean co
 
 	if (zoom >= 1.0f && zoom <= 45.0f)zoom -= yOffset;
 	zoom = std::clamp(zoom, 1.0f, 45.0f);
+}
+void Camera::ProcessMouseScroll(GLfloat yOffset)
+{
+	if (zoom >= 1 && zoom < 45) zoom -= yOffset;
+	if (zoom < 1) zoom = 1;
+	if (zoom > 45) zoom = 45;
 }
 float Camera::GetZoom()
 {
